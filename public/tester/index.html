@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#002776">
+  <meta name="description" content="Teste seguro da API Drop of Water">
+  <title>Testar API | Drop of Water</title>
+  <link rel="stylesheet" href="/tester/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/admin/"><span class="brand-mark">DW</span><span>Drop of Water<small>Ambiente de testes da API</small></span></a>
+    <a class="back-link" href="/admin/">Voltar ao painel <span aria-hidden="true">↗</span></a>
+  </header>
+  <main class="page">
+    <section class="intro">
+      <p class="eyebrow">FERRAMENTA DE DESENVOLVIMENTO</p>
+      <h1>Teste o caminho da leitura.</h1>
+      <p>Simule o ESP32, valide a autenticação e confirme que o app recebe a telemetria.</p>
+      <div class="notice"><span aria-hidden="true">i</span><span>Em produção, entre com uma conta admin para liberar os testes. Não compartilhe chaves de dispositivo.</span></div>
+    </section>
+
+    <section id="admin-gate" class="panel auth-panel">
+      <div class="panel-copy"><p class="eyebrow">ACESSO RESTRITO</p><h2>Entre como administrador</h2><p>O login libera a interface de testes neste navegador.</p></div>
+      <form id="admin-login" class="inline-form">
+        <label>E-mail admin<input name="email" type="email" autocomplete="username" required></label>
+        <label>Senha<input name="password" type="password" maxlength="72" autocomplete="current-password" required></label>
+        <button class="button primary" type="submit">Entrar</button>
+      </form>
+      <p id="admin-message" class="message" role="status"></p>
+    </section>
+
+    <div id="tester-content" hidden>
+      <section class="panel config-panel">
+        <div class="panel-heading"><div><p class="eyebrow">CONEXÃO</p><h2>Dados de teste</h2></div><button id="logout" class="text-button">Sair</button></div>
+        <div class="field-grid">
+          <label>URL base<input id="base-url" type="url" spellcheck="false"></label>
+          <label>Device ID<input id="device-id" maxlength="64" autocomplete="off"></label>
+          <label>API Key<input id="device-key" type="password" maxlength="128" autocomplete="new-password"></label>
+          <label>E-mail do app<input id="app-email" type="email" autocomplete="username"></label>
+          <label>Senha do app<input id="app-password" type="password" maxlength="72" autocomplete="current-password"></label>
+        </div>
+        <p class="privacy-note">Os dados ficam na memória desta página e só são enviados à URL base configurada.</p>
+      </section>
+
+      <div class="workspace-grid">
+        <section class="panel action-panel">
+          <div class="panel-heading"><div><p class="eyebrow">SIMULADOR ESP32</p><h2>Dispositivo</h2></div><span class="section-number">01</span></div>
+          <div class="button-grid">
+            <button class="button secondary" data-action="health">Verificar servidor e banco</button>
+            <button class="button secondary" data-action="ping">GET /device/ping</button>
+            <button class="button secondary" data-action="config">GET /device/config</button>
+            <button class="button secondary" data-action="commands">GET /device/commands</button>
+            <button class="button primary" data-action="get-ingest">Enviar telemetria via GET</button>
+            <button class="button primary" data-action="post-ingest">Enviar telemetria via POST</button>
+            <button class="button secondary" data-action="replay">Reenviar mesma requisição GET</button>
+          </div>
+          <div class="ack-row"><label for="command-id">ID do comando</label><input id="command-id" type="number" min="1" placeholder="ID retornado em commands"><button id="ack-get" class="button secondary">Confirmar via GET</button><button id="ack-post" class="button secondary">Confirmar via POST</button></div>
+        </section>
+
+        <section class="panel action-panel">
+          <div class="panel-heading"><div><p class="eyebrow">SIMULADOR DO APP</p><h2>Aplicativo mobile</h2></div><span class="section-number">02</span></div>
+          <div class="button-grid">
+            <button id="app-login" class="button primary">Entrar no app</button>
+            <button id="app-register" class="button secondary">Criar conta de teste</button>
+            <button id="app-devices" class="button secondary">Listar dispositivos</button>
+            <button id="app-details" class="button secondary">Ver detalhes do dispositivo</button>
+            <button id="app-latest" class="button secondary">Ver última leitura</button>
+            <button id="app-history" class="button secondary">Consultar histórico</button>
+            <button id="app-command" class="button secondary">Enviar comando de teste</button>
+          </div>
+          <label class="device-select-label">Dispositivo do app<select id="app-device"><option value="">Faça login para listar dispositivos</option></select></label>
+          <p id="app-message" class="message" role="status"></p>
+        </section>
+      </div>
+
+      <section class="panel results-panel">
+        <div class="panel-heading"><div><p class="eyebrow">RESPOSTA HTTP</p><h2>Resultado do último teste</h2></div><span id="response-meta" class="response-meta">Aguardando uma chamada</span></div>
+        <pre id="response-json" aria-live="polite">A resposta JSON aparecerá aqui.</pre>
+      </section>
+
+      <section class="panel checklist-panel">
+        <div class="panel-heading"><div><p class="eyebrow">VALIDAÇÃO DE PONTA A PONTA</p><h2>Checklist</h2></div></div>
+        <ul class="checklist">
+          <li data-check="server"><span class="check-icon">–</span>Servidor OK</li>
+          <li data-check="db"><span class="check-icon">–</span>Banco OK</li>
+          <li data-check="device"><span class="check-icon">–</span>Autenticação do dispositivo</li>
+          <li data-check="get"><span class="check-icon">–</span>Ingestão via GET</li>
+          <li data-check="post"><span class="check-icon">–</span>Ingestão via POST</li>
+          <li data-check="app"><span class="check-icon">–</span>Leitura pelo app</li>
+        </ul>
+      </section>
+    </div>
+    <footer><span>Drop of Water · API v1</span><span>Use HTTPS e nunca inclua chaves na URL.</span></footer>
+  </main>
+  <script src="/tester/app.js" defer></script>
+</body>
+</html>

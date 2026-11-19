@@ -1,0 +1,207 @@
+@base = http://localhost:3000/api/v1
+@root = http://localhost:3000
+@deviceId = sensor-estufa-01
+@deviceKey = PASTE_DEVICE_KEY_HERE
+@userToken = PASTE_USER_JWT_HERE
+@adminToken = PASTE_ADMIN_JWT_HERE
+@userId = 1
+@commandId = 1
+
+### Public health
+GET {{root}}/health
+
+### Public health (versioned)
+GET {{base}}/health
+
+### Register app user
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "user@example.test",
+  "password": "replace-with-a-long-password"
+}
+
+### App user login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@example.test",
+  "password": "replace-with-a-long-password"
+}
+
+### Admin login
+POST {{base}}/admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.test",
+  "password": "set-in-environment"
+}
+
+### Device authentication
+GET {{base}}/device/ping
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+
+### Device configuration
+GET {{base}}/device/config
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+
+### Pending device commands
+GET {{base}}/device/commands
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+
+### GET ingestion (new timestamp and nonce on each run)
+GET {{base}}/device/ingest?temp=24.5&hum=61.2&bat=92&ts={{$timestamp}}&nonce={{$guid}}
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+
+### JSON telemetry
+POST {{base}}/device/telemetry
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+Content-Type: application/json
+
+{
+  "temp": 24.5,
+  "hum": 61.2,
+  "bat": 92
+}
+
+### Acknowledge a command via GET
+GET {{base}}/device/commands/ack?id={{commandId}}&status=done
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+
+### Acknowledge a command via POST
+POST {{base}}/device/commands/{{commandId}}/ack
+X-Device-Id: {{deviceId}}
+X-Device-Key: {{deviceKey}}
+Content-Type: application/json
+
+{
+  "status": "done"
+}
+
+### List the user's devices
+GET {{base}}/devices
+Authorization: Bearer {{userToken}}
+
+### Device details
+GET {{base}}/devices/{{deviceId}}
+Authorization: Bearer {{userToken}}
+
+### Telemetry history
+GET {{base}}/devices/{{deviceId}}/telemetry?limit=50&page=1
+Authorization: Bearer {{userToken}}
+
+### Latest telemetry
+GET {{base}}/devices/{{deviceId}}/telemetry/latest
+Authorization: Bearer {{userToken}}
+
+### Queue a command
+POST {{base}}/devices/{{deviceId}}/commands
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{
+  "command": "status"
+}
+
+### Create a device (key is returned only once)
+POST {{base}}/admin/devices
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "device_id": "sensor-estufa-01",
+  "name": "Sensor da estufa",
+  "allow_get": true,
+  "require_nonce": true,
+  "interval_sec": 60
+}
+
+### Dashboard statistics
+GET {{base}}/admin/stats
+Authorization: Bearer {{adminToken}}
+
+### Admin device inventory
+GET {{base}}/admin/devices
+Authorization: Bearer {{adminToken}}
+
+### Update a device
+PUT {{base}}/admin/devices/{{deviceId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "name": "Sensor da estufa",
+  "status": "active",
+  "allow_get": true,
+  "require_nonce": true,
+  "interval_sec": 60
+}
+
+### Rotate a device key (returned once)
+POST {{base}}/admin/devices/{{deviceId}}/rotate-key
+Authorization: Bearer {{adminToken}}
+
+### Revoke a device key and disable the device
+POST {{base}}/admin/devices/{{deviceId}}/revoke-key
+Authorization: Bearer {{adminToken}}
+
+### Deactivate a device
+DELETE {{base}}/admin/devices/{{deviceId}}
+Authorization: Bearer {{adminToken}}
+
+### List users
+GET {{base}}/admin/users
+Authorization: Bearer {{adminToken}}
+
+### Create a user
+POST {{base}}/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "person@example.test",
+  "password": "replace-with-a-long-password"
+}
+
+### Update a user
+PUT {{base}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "status": "active"
+}
+
+### Deactivate a user
+DELETE {{base}}/admin/users/{{userId}}
+Authorization: Bearer {{adminToken}}
+
+### Link a device to a user
+POST {{base}}/admin/users/{{userId}}/devices
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "device_id": "{{deviceId}}"
+}
+
+### Unlink a device from a user
+DELETE {{base}}/admin/users/{{userId}}/devices/{{deviceId}}
+Authorization: Bearer {{adminToken}}
+
+### Admin audit log
+GET {{base}}/admin/audit
+Authorization: Bearer {{adminToken}}
+
+### Admin logs
+GET {{base}}/admin/logs?limit=100
+Authorization: Bearer {{adminToken}}

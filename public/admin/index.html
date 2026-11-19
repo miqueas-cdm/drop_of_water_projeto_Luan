@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#002776">
+  <meta name="description" content="Painel de administração Drop of Water">
+  <title>Administração | Drop of Water</title>
+  <link rel="stylesheet" href="/admin/style.css">
+</head>
+<body>
+  <div id="login-view" class="login-shell">
+    <form id="login-form" class="login-card">
+      <a class="brand-mark" href="/admin/" aria-label="Drop of Water">DW</a>
+      <p class="eyebrow">DROP OF WATER / ADMINISTRAÇÃO</p>
+      <h1>Entre no painel</h1>
+      <p class="muted">Acesse dispositivos, usuários e leituras em um só lugar.</p>
+      <label for="login-email">E-mail</label>
+      <input id="login-email" name="email" type="email" autocomplete="username" required>
+      <label for="login-password">Senha</label>
+      <input id="login-password" name="password" type="password" maxlength="72" autocomplete="current-password" required>
+      <button class="button primary wide" type="submit">Entrar como administrador</button>
+      <p id="login-message" class="form-message" role="status"></p>
+    </form>
+  </div>
+
+  <div id="app-view" class="app-shell" hidden>
+    <aside class="sidebar">
+      <a class="brand" href="/admin/"><span class="brand-mark">DW</span><span>Drop of Water<small>Console de gestão</small></span></a>
+      <nav aria-label="Navegação principal">
+        <button class="nav-link active" data-view="dashboard"><span>01</span> Visão geral</button>
+        <button class="nav-link" data-view="devices"><span>02</span> Dispositivos</button>
+        <button class="nav-link" data-view="users"><span>03</span> Usuários</button>
+        <button class="nav-link" data-view="logs"><span>04</span> Auditoria</button>
+      </nav>
+      <div class="sidebar-bottom">
+        <a class="tester-link" href="/tester/">Abrir página de testes <span aria-hidden="true">↗</span></a>
+        <button id="logout-button" class="logout-button">Sair do painel</button>
+        <span class="version-label">API v1 · Hostinger ready</span>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div><p class="eyebrow">MONITORAMENTO / <span id="current-section">VISÃO GERAL</span></p><h1 id="page-title">Visão geral</h1></div>
+        <div class="topbar-right"><span id="server-status" class="status-pill"><i></i> Verificando servidor</span><button id="refresh-button" class="button secondary">Atualizar</button></div>
+      </header>
+
+      <section id="view-dashboard" class="view-panel" hidden>
+        <div class="welcome-row">
+          <div><h2>Dados em tempo real, sem complicação.</h2><p class="muted">Acompanhe os dispositivos e as leituras recentes da sua rede.</p></div>
+          <a class="button primary" href="#devices" data-open-view="devices">Gerenciar dispositivos <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card"><span>Dispositivos cadastrados</span><strong id="metric-total">—</strong><small>no sistema</small><span class="metric-icon blue">D</span></article>
+          <article class="metric-card"><span>Dispositivos online</span><strong id="metric-online">—</strong><small id="metric-offline">— offline</small><span class="metric-icon green">●</span></article>
+          <article class="metric-card"><span>Leituras nas últimas 24h</span><strong id="metric-readings">—</strong><small>telemetrias recebidas</small><span class="metric-icon yellow">↗</span></article>
+        </div>
+        <div class="content-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading"><div><p class="eyebrow">ATIVIDADE</p><h2>Leituras recentes</h2></div><span class="chart-caption">Últimos dados recebidos</span></div>
+            <canvas id="telemetry-chart" height="210" aria-label="Gráfico de leituras recentes" role="img"></canvas>
+            <div id="chart-empty" class="empty-note">Ainda não há leituras para exibir.</div>
+          </article>
+          <article class="panel health-panel">
+            <div class="panel-heading"><div><p class="eyebrow">SISTEMA</p><h2>Status dos serviços</h2></div></div>
+            <div class="health-row"><span>API REST</span><span id="api-health" class="health-value">Verificando</span></div>
+            <div class="health-row"><span>Banco MySQL</span><span id="db-health" class="health-value">Verificando</span></div>
+            <div class="health-row"><span>Ambiente</span><span id="env-health" class="health-value">Hostinger Node.js</span></div>
+            <p class="health-footnote">O primeiro acesso após inatividade pode levar alguns segundos.</p>
+          </article>
+        </div>
+        <article class="panel endpoint-panel">
+          <div class="panel-heading"><div><p class="eyebrow">REFERÊNCIA RÁPIDA</p><h2>Endpoints principais</h2></div><a href="/tester/">Testar API <span aria-hidden="true">↗</span></a></div>
+          <div class="endpoint-list">
+            <code><b>GET</b> /api/v1/health</code><code><b>GET</b> /api/v1/device/config</code>
+            <code><b>GET</b> /api/v1/device/ingest</code><code><b>POST</b> /api/v1/device/telemetry</code>
+            <code><b>GET</b> /api/v1/devices/:id/telemetry/latest</code><code><b>POST</b> /api/v1/devices/:id/commands</code>
+          </div>
+        </article>
+      </section>
+
+      <section id="view-devices" class="view-panel" hidden>
+        <div class="section-intro"><div><h2>Dispositivos</h2><p class="muted">Cadastre sensores e controle o acesso à API.</p></div></div>
+        <form id="device-form" class="panel form-panel">
+          <div class="panel-heading"><div><p class="eyebrow">NOVO DISPOSITIVO</p><h3>Adicionar sensor</h3></div></div>
+          <div class="form-grid">
+            <label>ID do dispositivo<input name="device_id" maxlength="64" pattern="[A-Za-z0-9_-]+" placeholder="sensor-estufa-01" required></label>
+            <label>Nome<input name="name" maxlength="120" placeholder="Sensor da estufa" required></label>
+            <label>Vincular ao usuário (ID)<input name="user_id" type="number" min="1" placeholder="Opcional"></label>
+            <label>Intervalo de envio (segundos)<input name="interval_sec" type="number" min="1" max="3600" value="60" required></label>
+          </div>
+          <div class="toggle-row"><label><input name="allow_get" type="checkbox" checked> Permitir envio via GET</label><label><input name="require_nonce" type="checkbox" checked> Exigir timestamp e nonce</label></div>
+          <div class="form-actions"><button class="button primary" type="submit">Criar dispositivo</button><span id="device-form-message" class="form-message" role="status"></span></div>
+        </form>
+        <div id="new-key-panel" class="key-panel" hidden></div>
+        <article class="panel table-panel"><div class="panel-heading"><div><p class="eyebrow">REDE</p><h3>Dispositivos cadastrados</h3></div></div><div class="table-wrap"><table><thead><tr><th>Dispositivo</th><th>Status</th><th>Último contato</th><th>Configuração</th><th>Ações</th></tr></thead><tbody id="devices-table"></tbody></table></div></article>
+      </section>
+
+      <section id="view-users" class="view-panel" hidden>
+        <div class="section-intro"><div><h2>Usuários</h2><p class="muted">Crie contas e vincule os dispositivos que cada pessoa pode consultar.</p></div></div>
+        <form id="user-form" class="panel form-panel">
+          <div class="panel-heading"><div><p class="eyebrow">NOVA CONTA</p><h3>Criar usuário</h3></div></div>
+          <div class="form-grid"><label>E-mail<input name="email" type="email" maxlength="254" required></label><label>Senha inicial<input name="password" type="password" minlength="12" maxlength="72" autocomplete="new-password" required></label></div>
+          <div class="form-actions"><button class="button primary" type="submit">Criar usuário</button><span id="user-form-message" class="form-message" role="status"></span></div>
+        </form>
+        <article class="panel table-panel"><div class="panel-heading"><div><p class="eyebrow">CONTAS</p><h3>Usuários cadastrados</h3></div></div><div class="table-wrap"><table><thead><tr><th>Usuário</th><th>ID</th><th>Dispositivos vinculados</th><th>Status</th><th>Ações</th></tr></thead><tbody id="users-table"></tbody></table></div></article>
+        <form id="link-form" class="panel form-panel compact-form"><div class="panel-heading"><div><p class="eyebrow">ACESSO A DISPOSITIVOS</p><h3>Vincular dispositivo</h3></div></div><div class="form-grid"><label>ID do usuário<input name="user_id" type="number" min="1" required></label><label>ID do dispositivo<input name="device_id" maxlength="64" required></label></div><div class="form-actions"><button class="button secondary" type="submit">Vincular</button><span id="link-form-message" class="form-message" role="status"></span></div></form>
+      </section>
+
+      <section id="view-logs" class="view-panel" hidden>
+        <div class="section-intro"><div><h2>Auditoria</h2><p class="muted">Ações administrativas recentes, registradas no banco de dados.</p></div></div>
+        <article class="panel table-panel"><div class="panel-heading"><div><p class="eyebrow">HISTÓRICO</p><h3>Eventos administrativos</h3></div></div><div class="table-wrap"><table><thead><tr><th>Data</th><th>Responsável</th><th>Ação</th><th>Alvo</th></tr></thead><tbody id="audit-table"></tbody></table></div></article>
+      </section>
+      <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    </main>
+  </div>
+  <script src="/admin/app.js" defer></script>
+</body>
+</html>
