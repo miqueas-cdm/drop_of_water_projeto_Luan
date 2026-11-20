@@ -144,12 +144,34 @@ function createApp({ pool, allowedOrigins } = {}) {
       res.status(503).set('Cache-Control', 'no-store').json({ status: 'error', db: 'unavailable' });
     }
   });
+  app.get('/robots.txt', (req, res) => {
+    res.type('text/plain').send([
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /api/',
+      'Disallow: /admin/',
+      'Disallow: /tester/',
+      '',
+      'Sitemap: https://dropofwater.miqtav.com/sitemap.xml',
+      ''
+    ].join('\n'));
+  });
+  app.get('/sitemap.xml', (req, res) => {
+    res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://dropofwater.miqtav.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+</urlset>`);
+  });
 
   const publicDir = path.join(__dirname, '..', 'public');
   app.use('/admin', express.static(path.join(publicDir, 'admin'), { index: 'index.html', fallthrough: false }));
   app.use('/tester', express.static(path.join(publicDir, 'tester'), { index: 'index.html', fallthrough: false }));
   app.use('/app-demo', express.static(path.join(publicDir, 'app-demo'), { index: 'index.html', fallthrough: false }));
-  app.get('/', (req, res) => res.redirect('/admin/'));
+  app.get('/', (req, res) => res.sendFile(path.join(publicDir, 'index.html')));
 
   app.use((req, res, next) => next(new HttpError(404, 'Not found.')));
   app.use((error, req, res, next) => {
