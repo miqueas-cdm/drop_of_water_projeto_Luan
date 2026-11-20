@@ -13,7 +13,6 @@ async function start() {
       throw new Error('JWT_SECRET must be configured with at least 32 bytes.');
     }
     pool = createPool();
-    await initializeDatabase(pool);
     const app = appFactory({ pool });
     const port = Number(process.env.PORT) || 3000;
     const server = app.listen(port, '0.0.0.0', () => {
@@ -32,10 +31,17 @@ async function start() {
     };
     process.once('SIGTERM', shutdown);
     process.once('SIGINT', shutdown);
+
+    initializeDatabase(pool).catch((error) => {
+      console.error('Database initialization failed.', error && error.code ? error.code : '');
+    });
+
+    return server;
   } catch {
     if (pool) await pool.end().catch(() => {});
-    console.error('Server startup failed. Check environment variables and MySQL availability.');
+    console.error('Server startup failed. Check JWT_SECRET and database environment variables.');
     process.exitCode = 1;
+    return null;
   }
 }
 
