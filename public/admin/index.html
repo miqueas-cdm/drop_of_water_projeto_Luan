@@ -81,10 +81,15 @@
         <article class="panel endpoint-panel">
           <div class="panel-heading"><div><p class="eyebrow">REFERÊNCIA RÁPIDA</p><h2>Endpoints principais</h2></div><a href="/tester/">Testar API <span aria-hidden="true">↗</span></a></div>
           <div class="endpoint-list">
-            <code><b>GET</b> /api/v1/health</code><code><b>GET</b> /api/v1/device/config</code>
-            <code><b>GET</b> /api/v1/device/ingest</code><code><b>POST</b> /api/v1/device/telemetry</code>
-            <code><b>GET</b> /api/v1/devices/:id/telemetry/latest</code><code><b>POST</b> /api/v1/devices/:id/commands</code>
+            <code><b>BASE</b> https://dropofwater.miqtav.com/api/v1</code>
+            <code><b>GET</b> /health</code>
+            <code><b>GET</b> /device/ping</code>
+            <code><b>GET</b> /device/config</code>
+            <code><b>GET</b> /device/commands</code>
+            <code><b>GET</b> /device/ingest?deviceId=ID&amp;timestamp=UNIX&amp;nonce=UUID&amp;payload=JSON</code>
+            <code><b>POST</b> /device/telemetry</code>
           </div>
+          <p class="muted">Rotas do ESP32 exigem os cabeçalhos <code>X-Device-Id</code> e <code>X-Device-Key</code>. A chave nunca deve ir na URL.</p>
         </article>
       </section>
 

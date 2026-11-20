@@ -11,7 +11,7 @@
 
 const char *WIFI_SSID = "YOUR_WIFI";
 const char *WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char *API_BASE = "https://water.miqtav.com/api/v1";
+const char *API_BASE = "https://dropofwater.miqtav.com/api/v1";
 const char *DEVICE_ID = "YOUR_DEVICE_ID";
 const char *DEVICE_KEY = "PASTE_DEVICE_KEY_ONCE";
 const bool USE_POST_TELEMETRY = false;
