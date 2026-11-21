@@ -37,17 +37,18 @@
 
   $('#login-form').addEventListener('submit', async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
     const message = $('#login-message');
     message.textContent = 'Validando acesso…';
     message.className = 'form-message';
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     try {
       const result = await request('/admin/login', {
         method: 'POST',
         body: JSON.stringify({ email: form.get('email'), password: form.get('password') })
       });
       token = result.token;
-      event.currentTarget.reset();
+      formElement.reset();
       showApp();
     } catch (error) {
       message.textContent = error.message;
@@ -235,7 +236,8 @@
 
   $('#device-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const payload = {
       device_id: form.get('device_id'),
       name: form.get('name'),
@@ -247,9 +249,9 @@
     try {
       const result = await request('/admin/devices', { method: 'POST', body: JSON.stringify(payload) });
       showKey(result.device_id, result.device_key);
-      event.currentTarget.reset();
-      event.currentTarget.elements.allow_get.checked = true;
-      event.currentTarget.elements.require_nonce.checked = true;
+      formElement.reset();
+      formElement.elements.allow_get.checked = true;
+      formElement.elements.require_nonce.checked = true;
       $('#device-form-message').textContent = 'Dispositivo criado.';
       $('#device-form-message').className = 'form-message success';
       loadDevices();
@@ -272,13 +274,14 @@
 
   $('#user-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       const result = await request('/admin/users', {
         method: 'POST',
         body: JSON.stringify({ email: form.get('email'), password: form.get('password') })
       });
-      event.currentTarget.reset();
+      formElement.reset();
       $('#user-form-message').textContent = `Usuário criado (ID ${result.id}).`;
       $('#user-form-message').className = 'form-message success';
       loadUsers();
@@ -300,14 +303,15 @@
 
   $('#link-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     try {
       await request(`/admin/users/${form.get('user_id')}/devices`, {
         method: 'POST', body: JSON.stringify({ device_id: form.get('device_id') })
       });
       $('#link-form-message').textContent = 'Dispositivo vinculado.';
       $('#link-form-message').className = 'form-message success';
-      event.currentTarget.reset();
+      formElement.reset();
       loadUsers();
     } catch (error) {
       $('#link-form-message').textContent = error.message;

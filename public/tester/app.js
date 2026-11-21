@@ -67,7 +67,8 @@
 
   async function adminLogin(event) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     $('#admin-message').textContent = 'Validando acesso…';
     try {
       const result = await call('/admin/login', {
@@ -77,7 +78,7 @@
       });
       if (!result.ok || !result.body?.token) throw new Error(result.body?.error || 'Não foi possível entrar.');
       adminToken = result.body.token;
-      event.currentTarget.reset();
+      formElement.reset();
       $('#admin-gate').hidden = true;
       $('#tester-content').hidden = false;
       $('#base-url').value = `${window.location.origin}/api/v1`;
