@@ -120,6 +120,10 @@ function createApp({ pool, allowedOrigins } = {}) {
   });
 
   const api = express.Router();
+  const allowUnauthenticatedDeviceAccess = process.env.ALLOW_UNAUTHENTICATED_DEVICE_ACCESS === 'true';
+  if (allowUnauthenticatedDeviceAccess) {
+    console.warn('WARNING: unauthenticated device access is enabled for testing.');
+  }
   api.get('/health', validateQueryPolicy([]), async (req, res) => {
     try {
       await pool.query('SELECT 1');
@@ -129,7 +133,7 @@ function createApp({ pool, allowedOrigins } = {}) {
     }
   });
   api.use('/', createAuthRouter(pool, loginLimiter));
-  api.use('/device', createDeviceRouter(pool, deviceLimiter));
+  api.use('/device', createDeviceRouter(pool, deviceLimiter, { allowUnauthenticatedDeviceAccess }));
   api.use('/', createUsersRouter(pool, readLimiter));
   api.use('/admin', createAdminRouter(pool));
   app.use('/api/v1', (req, res, next) => {

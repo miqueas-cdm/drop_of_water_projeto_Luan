@@ -6,15 +6,23 @@ const { requireDevice } = require('../middleware/device-auth');
 const { validate, validateQueryPolicy } = require('../middleware/validate');
 const schemas = require('../validation/schemas');
 
-function createDeviceRouter(pool, deviceLimiter) {
+function createDeviceRouter(pool, deviceLimiter, options) {
   const router = express.Router();
   router.use((req, res, next) => {
     if (req.method === 'GET') res.set('Cache-Control', 'no-store');
     next();
   });
   router.use(deviceLimiter);
-  router.use(requireDevice(pool));
-  router.use(validateQueryPolicy(['/device/ingest', '/device/commands/ack']));
+  router.use(requireDevice(pool, options));
+  const validateAuthenticatedQuery = validateQueryPolicy(['/device/ingest', '/device/commands/ack']);
+  router.use((req, res, next) => {
+    if (!req.unauthenticatedDeviceAccess) return validateAuthenticatedQuery(req, res, next);
+    delete req.query.dispositivo_id;
+    if ((req.path === '/commands' || req.method === 'POST') && Object.keys(req.query).length) {
+      return next(new HttpError(400, 'Invalid request.'));
+    }
+    next();
+  });
 
   router.get('/ping', asyncRoute(async (req, res) => {
     await touchDevice(pool, req.device.device_id);

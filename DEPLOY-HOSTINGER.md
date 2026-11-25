@@ -14,3 +14,4 @@
 - Configure o ESP32 com timeout de 15 s, até três tentativas e a CA que valida o domínio. Não use `setInsecure()` em produção.
 - O MySQL pode encerrar conexões ociosas; o pool da aplicação adquire conexões novamente sob demanda.
 - Faça backup do banco. Revogue/rotacione imediatamente qualquer senha ou chave exposta.
+- Somente para testes temporários sem chave, defina `ALLOW_UNAUTHENTICATED_DEVICE_ACCESS=true` nas variáveis do Node.js no hPanel e reinicie. Isso expõe leituras e comandos de dispositivos a qualquer pessoa que saiba o ID; desative após o teste. Veja as URLs e os riscos no README.

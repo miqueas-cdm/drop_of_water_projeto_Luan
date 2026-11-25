@@ -36,6 +36,21 @@ const char* URL_GET_COMANDO = "https://dropofwater.miqtav.com/api/v1/device/comm
 
 Em ambas as requisições, envie `X-Device-Id: DEVICE_ID` e `X-Device-Key: DEVICE_KEY` como cabeçalhos, substituindo pelos valores cadastrados no painel. Não acrescente `dispositivo_id` à URL nem use o token da antiga API PHP: as credenciais e rotas são diferentes. O POST também precisa de `Content-Type: application/json` e de um corpo como `{"temp":24.5,"hum":61.2,"bat":92}`. O GET retorna `{"commands":[{"id":1,"command":"status"}]}` quando há um comando pendente; após executá-lo, confirme-o pela rota de ack. Veja o sketch completo para HTTPS, leitura e confirmação.
 
+### Modo temporário de teste sem chave
+
+Por padrão a chave continua obrigatória. Para testes temporários, configure `ALLOW_UNAUTHENTICATED_DEVICE_ACCESS=true` no ambiente do servidor e reinicie a aplicação. O dispositivo ainda precisa estar cadastrado e ativo. Substitua `SEU_ID` pelo ID do dispositivo:
+
+```cpp
+const String URL_GET_COMANDO = "https://dropofwater.miqtav.com/api/v1/device/commands?dispositivo_id=" + String(DEVICE_ID);
+const String URL_POST_LEITURAS = "https://dropofwater.miqtav.com/api/v1/device/telemetry?dispositivo_id=" + String(DEVICE_ID);
+```
+
+O POST continua exigindo JSON e `Content-Type: application/json`. Para confirmar um comando sem chave, use `GET /api/v1/device/commands/ack?dispositivo_id=SEU_ID&id=1&status=done` ou `POST /api/v1/device/commands/1/ack?dispositivo_id=SEU_ID` com `{"status":"done"}`. Também é possível usar `GET /api/v1/device/ingest?dispositivo_id=SEU_ID&temp=24.5&ts=TIMESTAMP_UNIX&nonce=NONCE_NOVO`; as opções `allow_get` e `require_nonce` do dispositivo continuam valendo.
+
+No sketch de exemplo, ative `USE_UNAUTHENTICATED_TEST_ACCESS` para usar esse modo. A configuração remota permanece protegida e não é consultada nesse caso; o sketch usa o intervalo padrão de 60 segundos.
+
+**Atenção:** com esse modo ativo em um site público, qualquer pessoa que saiba ou adivinhe o ID pode enviar dados, ler comandos e confirmá-los; consultar comandos altera seu estado. Não o use com equipamentos reais. Após os testes, defina `ALLOW_UNAUTHENTICATED_DEVICE_ACCESS=false` ou remova a variável e reinicie. Rotas de usuário e administração continuam protegidas.
+
 ## Rotas
 
 - Público: `GET /api/v1/health`, `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/admin/login`.

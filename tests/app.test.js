@@ -162,3 +162,102 @@ test('HTTP flow authenticates devices, rejects replay and scopes telemetry to it
   assert.equal((await latestAfterGet.json()).reading.payload.temp, 22.3);
   assert.equal(telemetryRows.filter((row) => row.device_id === 'sensor-test').length, 2);
 });
+
+test('temporary public device access is opt-in and limited to active devices and device operations', async (t) => {
+  const oldSecret = process.env.JWT_SECRET;
+  const oldPublicAccess = process.env.ALLOW_UNAUTHENTICATED_DEVICE_ACCESS;
+  process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+  const recorded = [];
+  const pool = {
+    async execute(sql, params) {
+      if (sql.includes('FROM devices WHERE device_id = ? LIMIT 1')) {
+        if (params[0] === 'missing') return [[], []];
+        return [[{
+          device_id: params[0],
+          key_hash: hashDeviceKey('test-device-key'),
+          status: params[0] === 'inactive' ? 'inactive' : 'active',
+          allow_get: 1,
+          require_nonce: 1,
+          interval_sec: 60
+        }], []];
+      }
+      if (sql.includes('INSERT INTO telemetry')) recorded.push({ deviceId: params[0], payload: JSON.parse(params[1]) });
+      if (sql.includes('SELECT id, command FROM commands')) return [[{ id: 1, command: 'status' }], []];
+      if (sql.includes('SELECT COUNT(*) AS count FROM commands')) return [[{ count: 0 }], []];
+      return [{ affectedRows: 1 }, []];
+    }
+  };
+  pool.getConnection = async () => ({
+    execute: pool.execute.bind(pool),
+    beginTransaction: async () => {},
+    commit: async () => {},
+    rollback: async () => {},
+    release: () => {}
+  });
+  const servers = [];
+  t.after(async () => {
+    await Promise.all(servers.map((server) => new Promise((resolve) => server.close(resolve))));
+    if (oldSecret === undefined) delete process.env.JWT_SECRET;
+    else process.env.JWT_SECRET = oldSecret;
+    if (oldPublicAccess === undefined) delete process.env.ALLOW_UNAUTHENTICATED_DEVICE_ACCESS;
+    else process.env.ALLOW_UNAUTHENTICATED_DEVICE_ACCESS = oldPublicAccess;
+  });
+  const start = async (enabled) => {
+    if (enabled) process.env.ALLOW_UNAUTHENTICATED_DEVICE_ACCESS = 'true';
+    else delete process.env.ALLOW_UNAUTHENTICATED_DEVICE_ACCESS;
+    const server = createApp({ pool }).listen(0, '127.0.0.1');
+    servers.push(server);
+    await new Promise((resolve, reject) => {
+      server.once('listening', resolve);
+      server.once('error', reject);
+    });
+    return `http://127.0.0.1:${server.address().port}/api/v1`;
+  };
+  let ip = 0;
+  const request = (base, path, options = {}) => fetch(`${base}${path}`, {
+    ...options,
+    headers: { 'X-Forwarded-For': `192.0.2.${++ip}`, ...options.headers }
+  });
+
+  const secure = await start(false);
+  assert.equal((await request(secure, '/device/commands?dispositivo_id=sensor')).status, 401);
+  assert.equal((await request(secure, '/device/telemetry?dispositivo_id=sensor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ temp: 24.5 })
+  })).status, 401);
+  const publicBase = await start(true);
+  const commands = await request(publicBase, '/device/commands?dispositivo_id=sensor');
+  assert.equal(commands.status, 200);
+  assert.deepEqual(await commands.json(), { commands: [{ id: 1, command: 'status' }] });
+  const post = await request(publicBase, '/device/telemetry?dispositivo_id=sensor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ temp: 24.5 })
+  });
+  assert.equal(post.status, 201);
+  assert.deepEqual(recorded[0], { deviceId: 'sensor', payload: { temp: 24.5 } });
+  const ts = Math.floor(Date.now() / 1000);
+  assert.equal((await request(publicBase, `/device/ingest?dispositivo_id=sensor&temp=23&ts=${ts}&nonce=12345678`)).status, 200);
+  assert.equal((await request(publicBase, '/device/commands/ack?dispositivo_id=sensor&id=1&status=done')).status, 200);
+  assert.equal((await request(publicBase, '/device/commands/1/ack?dispositivo_id=sensor', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: 'done' })
+  })).status, 200);
+  assert.equal((await request(publicBase, '/device/commands?dispositivo_id=missing')).status, 401);
+  assert.equal((await request(publicBase, '/device/commands?dispositivo_id=inactive')).status, 403);
+  assert.equal((await request(publicBase, '/device/commands?dispositivo_id=sensor&dispositivo_id=other')).status, 401);
+  assert.equal((await request(publicBase, '/device/commands?dispositivo_id=sensor', {
+    headers: { 'X-Device-Id': 'other-sensor' }
+  })).status, 401);
+  assert.equal((await request(publicBase, '/device/commands?dispositivo_id=sensor&extra=1')).status, 400);
+  assert.equal((await request(publicBase, '/device/ingest?dispositivo_id=sensor&temp=23')).status, 400);
+  assert.equal((await request(publicBase, '/device/config?dispositivo_id=sensor')).status, 401);
+  assert.equal((await request(publicBase, '/device/commands?dispositivo_id=sensor', {
+    headers: { 'X-Device-Id': 'sensor', 'X-Device-Key': 'wrong-key' }
+  })).status, 401);
+  assert.equal((await request(publicBase, '/device/ping', {
+    headers: { 'X-Device-Id': 'authenticated-sensor', 'X-Device-Key': 'test-device-key' }
+  })).status, 200);
+});

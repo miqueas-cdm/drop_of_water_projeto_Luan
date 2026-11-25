@@ -17,6 +17,7 @@ const char *URL_GET_COMANDO = API_BASE "/device/commands";
 const char *DEVICE_ID = "YOUR_DEVICE_ID";
 const char *DEVICE_KEY = "PASTE_DEVICE_KEY_ONCE";
 const bool USE_POST_TELEMETRY = false;
+const bool USE_UNAUTHENTICATED_TEST_ACCESS = false;
 
 const unsigned long HTTP_TIMEOUT_MS = 15000;
 const unsigned int MAX_RETRIES = 3;
@@ -53,16 +54,23 @@ bool synchronizeClock() {
 
 int requestOnce(const String &url, const char *method, const String &body, String &responseBody) {
   HTTPClient http;
+  String requestUrl = url;
+  if (USE_UNAUTHENTICATED_TEST_ACCESS) {
+    requestUrl += (requestUrl.indexOf('?') >= 0 ? "&dispositivo_id=" : "?dispositivo_id=");
+    requestUrl += DEVICE_ID;
+  }
   http.setConnectTimeout(HTTP_TIMEOUT_MS);
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.setReuse(false);
 
-  if (!http.begin(secureClient, url)) {
+  if (!http.begin(secureClient, requestUrl)) {
     Serial.println("Unable to start HTTPS request.");
     return -1;
   }
-  http.addHeader("X-Device-Id", DEVICE_ID);
-  http.addHeader("X-Device-Key", DEVICE_KEY);
+  if (!USE_UNAUTHENTICATED_TEST_ACCESS) {
+    http.addHeader("X-Device-Id", DEVICE_ID);
+    http.addHeader("X-Device-Key", DEVICE_KEY);
+  }
   if (strcmp(method, "POST") == 0) http.addHeader("Content-Type", "application/json");
 
   int status = strcmp(method, "POST") == 0 ? http.POST(body) : http.GET();
@@ -184,8 +192,10 @@ void loop() {
   float battery = 60.0f + (float)random(0, 400) / 10.0f;
   sendReading(temperature, humidity, battery);
   delay(DEVICE_REQUEST_GAP_MS);
-  readConfig();
-  delay(DEVICE_REQUEST_GAP_MS);
+  if (!USE_UNAUTHENTICATED_TEST_ACCESS) {
+    readConfig();
+    delay(DEVICE_REQUEST_GAP_MS);
+  }
   checkCommands();
   delay((unsigned long)intervalSeconds * 1000UL);
 }
