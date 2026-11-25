@@ -25,6 +25,17 @@ As tabelas são criadas automaticamente. Verifique `http://localhost:3000/api/v1
 
 O firmware deve configurar timeout de 15 segundos e tentar novamente até três vezes. O Web App da Hostinger pode pausar quando não há tráfego, portanto a primeira requisição pode demorar. O GET `/device/ingest` altera o estado e foi mantido por compatibilidade com firmware: isso foge da semântica HTTP normal de GET. Prefira POST quando puder atualizar o firmware.
 
+### URLs do ESP32
+
+Para a API em `dropofwater.miqtav.com`, use:
+
+```cpp
+const char* URL_POST_LEITURAS = "https://dropofwater.miqtav.com/api/v1/device/telemetry";
+const char* URL_GET_COMANDO = "https://dropofwater.miqtav.com/api/v1/device/commands";
+```
+
+Em ambas as requisições, envie `X-Device-Id: DEVICE_ID` e `X-Device-Key: DEVICE_KEY` como cabeçalhos, substituindo pelos valores cadastrados no painel. Não acrescente `dispositivo_id` à URL nem use o token da antiga API PHP: as credenciais e rotas são diferentes. O POST também precisa de `Content-Type: application/json` e de um corpo como `{"temp":24.5,"hum":61.2,"bat":92}`. O GET retorna `{"commands":[{"id":1,"command":"status"}]}` quando há um comando pendente; após executá-lo, confirme-o pela rota de ack. Veja o sketch completo para HTTPS, leitura e confirmação.
+
 ## Rotas
 
 - Público: `GET /api/v1/health`, `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, `POST /api/v1/admin/login`.

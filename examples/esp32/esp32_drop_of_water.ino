@@ -11,7 +11,9 @@
 
 const char *WIFI_SSID = "YOUR_WIFI";
 const char *WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char *API_BASE = "https://dropofwater.miqtav.com/api/v1";
+#define API_BASE "https://dropofwater.miqtav.com/api/v1"
+const char *URL_POST_LEITURAS = API_BASE "/device/telemetry";
+const char *URL_GET_COMANDO = API_BASE "/device/commands";
 const char *DEVICE_ID = "YOUR_DEVICE_ID";
 const char *DEVICE_KEY = "PASTE_DEVICE_KEY_ONCE";
 const bool USE_POST_TELEMETRY = false;
@@ -49,9 +51,8 @@ bool synchronizeClock() {
   return false;
 }
 
-int requestOnce(const String &path, const char *method, const String &body, String &responseBody) {
+int requestOnce(const String &url, const char *method, const String &body, String &responseBody) {
   HTTPClient http;
-  String url = String(API_BASE) + path;
   http.setConnectTimeout(HTTP_TIMEOUT_MS);
   http.setTimeout(HTTP_TIMEOUT_MS);
   http.setReuse(false);
@@ -70,9 +71,9 @@ int requestOnce(const String &path, const char *method, const String &body, Stri
   return status;
 }
 
-int requestWithRetry(const String &path, const char *method, const String &body, String &responseBody) {
+int requestWithRetry(const String &url, const char *method, const String &body, String &responseBody) {
   for (unsigned int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    int status = requestOnce(path, method, body, responseBody);
+    int status = requestOnce(url, method, body, responseBody);
     if (status >= 200 && status < 300) return status;
     Serial.printf("Request failed (HTTP %d), attempt %u/%u.\n", status, attempt, MAX_RETRIES);
     if (attempt < MAX_RETRIES) delay(1200);
@@ -87,19 +88,19 @@ bool sendReading(float temperature, float humidity, float battery) {
     String body = "{\"temp\":" + String(temperature, 1)
       + ",\"hum\":" + String(humidity, 1)
       + ",\"bat\":" + String(battery, 1) + "}";
-    status = requestWithRetry("/device/telemetry", "POST", body, response);
+    status = requestWithRetry(URL_POST_LEITURAS, "POST", body, response);
   } else {
     // Generate a fresh timestamp and nonce for each retry, never put the device key in a URL.
     status = -1;
     for (unsigned int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       time_t now;
       time(&now);
-      String path = "/device/ingest?temp=" + String(temperature, 1)
+      String url = String(API_BASE) + "/device/ingest?temp=" + String(temperature, 1)
         + "&hum=" + String(humidity, 1)
         + "&bat=" + String(battery, 1)
         + "&ts=" + String((unsigned long)now)
         + "&nonce=" + makeNonce();
-      status = requestOnce(path, "GET", "", response);
+      status = requestOnce(url, "GET", "", response);
       if (status >= 200 && status < 300) break;
       if (attempt < MAX_RETRIES) delay(1200);
     }
@@ -112,7 +113,7 @@ bool sendReading(float temperature, float humidity, float battery) {
 
 bool readConfig() {
   String response;
-  if (requestWithRetry("/device/config", "GET", "", response) < 200) return false;
+  if (requestWithRetry(String(API_BASE) + "/device/config", "GET", "", response) < 200) return false;
 
   JsonDocument config;
   if (deserializeJson(config, response)) {
@@ -126,7 +127,7 @@ bool readConfig() {
 
 void checkCommands() {
   String response;
-  if (requestWithRetry("/device/commands", "GET", "", response) < 200) return;
+  if (requestWithRetry(URL_GET_COMANDO, "GET", "", response) < 200) return;
 
   JsonDocument data;
   if (deserializeJson(data, response)) {
@@ -142,8 +143,8 @@ void checkCommands() {
     // Apply the supported command here before acknowledging it.
     delay(DEVICE_REQUEST_GAP_MS);
     String ackResponse;
-    String ackPath = "/device/commands/ack?id=" + String(id) + "&status=done";
-    requestWithRetry(ackPath, "GET", "", ackResponse);
+    String ackUrl = String(API_BASE) + "/device/commands/ack?id=" + String(id) + "&status=done";
+    requestWithRetry(ackUrl, "GET", "", ackResponse);
     delay(DEVICE_REQUEST_GAP_MS);
   }
 }
